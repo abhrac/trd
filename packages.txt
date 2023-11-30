@@ -1,0 +1,13 @@
+conda install pytorch cudatoolkit=11.3 pyg -c pytorch -c pyg -c conda-forge
+conda install pytorch-metric-learning -c metric-learning -c pytorch
+conda install -c anaconda scikit-image
+conda install -c conda-forge opencv
+conda install -c conda-forge einops
+conda install -c conda-forge tensorboardx
+conda install -c conda-forge tensorboard
+conda install -c conda-forge tqdm
+conda install -c conda-forge timm
+conda install -c anaconda pillow=8.3.1
+conda install pytorch torchvision torchaudio cudatoolkit=11.3 pyg -c pytorch -c conda-forge -c pyg
+
+
