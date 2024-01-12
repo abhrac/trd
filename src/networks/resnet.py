@@ -1,3 +1,9 @@
+"""
+Adopted from MMAL --
+Paper: https://arxiv.org/pdf/2003.09150.pdf
+Code: https://github.com/ZF4444/MMAL-Net
+"""
+
 import torch
 import torch.nn as nn
 

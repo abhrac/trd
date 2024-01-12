@@ -1,11 +1,11 @@
+"""
+Adapted from https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py
+"""
+
 import torch
+from einops import rearrange, repeat
 from torch import nn
 
-from einops import rearrange, repeat
-from einops.layers.torch import Rearrange
-
-
-# helpers
 
 def pair(t):
     return t if isinstance(t, tuple) else (t, t)
@@ -88,7 +88,7 @@ class Transformer(nn.Module):
         return x
 
 
-class ViTf(nn.Module):
+class AST(nn.Module):
     def __init__(self, *, num_inputs, dim, depth, heads, mlp_dim, pool='cls', channels=3,
                  dim_head=64, dropout=0., emb_dropout=0.):
         super().__init__()
