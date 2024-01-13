@@ -9,6 +9,8 @@ class Options:
         parser.add_argument("--data_root", default=None, help="Root directory for all datasets. Default: ~/Datasets/")
         parser.add_argument("--dataset", default="FGVCAircraft",
                             help="FGVCAircraft, StanfordCars, CUB, NABirds, iNaturalist, CottonCultivar, SoyCultivar")
+        parser.add_argument("--train-bsize", default=8, type=int, help="Train batch size.")
+        parser.add_argument("--test-bsize", default=128, type=int, help="Test batch size.")
 
         # Model
         parser.add_argument("--model-type", default="relational_proxies",
@@ -19,6 +21,8 @@ class Options:
                             help="Location of logging directory. Default: ./checkpoint/logdir/")
         parser.add_argument("--pretrained", action='store_true', default=False,
                             help="Whether to load pretrained weights")
+        parser.add_argument("--train-backbone", action='store_true', default=False,
+                            help="Whether to update backbone weights.")
 
         # Misc
         parser.add_argument("--seed", default=-1, type=int, help="Seed for Numpy and PyTorch. Default: -1 (None)")

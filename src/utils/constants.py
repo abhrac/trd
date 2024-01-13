@@ -3,10 +3,8 @@ from os.path import expanduser
 HOME = expanduser('~')
 
 BACKBONE = 'ResNet50'
-TRAIN_BATCH_SIZE = 8
-TEST_BATCH_SIZE = 128
 SAVE_EVERY = 5
-TEST_EVERY = 5
+TEST_EVERY = 1
 MAX_CHECKPOINTS = 200
 END_EPOCH = 200
 INIT_LR = 0.001

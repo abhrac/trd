@@ -79,10 +79,10 @@ class Initializers:
         test_transform = RProxyTransformTest()
 
         trainset = datasets.ImageFolder(root=path_train_data, transform=train_transform)
-        trainloader = torch.utils.data.DataLoader(trainset, batch_size=constants.TRAIN_BATCH_SIZE, shuffle=True,
+        trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.train_bsize, shuffle=True,
                                                   pin_memory=True, num_workers=args.num_workers, drop_last=False)
         testset = datasets.ImageFolder(root=path_test_data, transform=test_transform)
-        testloader = torch.utils.data.DataLoader(testset, batch_size=constants.TEST_BATCH_SIZE, pin_memory=True,
+        testloader = torch.utils.data.DataLoader(testset, batch_size=args.test_bsize, pin_memory=True,
                                                  shuffle=False, num_workers=args.num_workers, drop_last=False)
         print('Done', flush=True)
 
@@ -103,7 +103,7 @@ class Initializers:
             model = RelationalProxies(backbone, args.n_classes, logdir)
             print('[INFO] Model: Relational Proxies')
         elif args.model_type == 'disjoint_encoding':
-            model = DisjointEncoding(backbone, args.n_classes, logdir)
+            model = DisjointEncoding(backbone, args.n_classes, logdir, args.train_backbone)
             print('[INFO] Model: Disjoint Encoding')
         model.to(device)
         self.model = model

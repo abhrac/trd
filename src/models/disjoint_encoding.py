@@ -14,7 +14,7 @@ from functools import partial
 
 
 class DisjointEncoding(nn.Module):
-    def __init__(self, backbone, num_classes, logdir):
+    def __init__(self, backbone, num_classes, logdir, train_backbone):
         super(DisjointEncoding, self).__init__()
         self.num_classes = num_classes
         self.feature_dim = constants.FEATURE_DIM
@@ -22,19 +22,18 @@ class DisjointEncoding(nn.Module):
 
         self.backbone = backbone
         self.aggregator = partial(torch.flatten, start_dim=-2, end_dim=-1)
+
         # self.relation_net = DisjointRelationNet(feature_dim=(self.feature_dim * (backbone.num_local + 1)),
         #                                 out_dim=self.feature_dim, num_classes=num_classes)
         self.relation_net = DisjointRelationNet(feature_dim=self.feature_dim * 2, out_dim=self.feature_dim, num_classes=num_classes)
+        if not train_backbone:
+            for param in backbone.parameters():
+                param.requires_grad = False
+            trainable_params = chain(self.relation_net.parameters())
+        else:
+            trainable_params = chain(backbone.parameters(), self.relation_net.parameters())
 
-        for param in backbone.parameters():
-            param.requires_grad = False
-
-        # self.optimizer = torch.optim.SGD(chain(
-        #     backbone.parameters(), self.relation_net.parameters()),
-        #     lr=self.lr, momentum=constants.MOMENTUM, weight_decay=constants.WEIGHT_DECAY)
-        self.optimizer = torch.optim.SGD(chain(self.relation_net.parameters()),
-            lr=self.lr, momentum=constants.MOMENTUM, weight_decay=constants.WEIGHT_DECAY)
-
+        self.optimizer = torch.optim.SGD(trainable_params, lr=self.lr, momentum=constants.MOMENTUM, weight_decay=constants.WEIGHT_DECAY)
         self.scheduler = MultiStepLR(self.optimizer, milestones=constants.LR_MILESTONES, gamma=constants.LR_DECAY_RATE)
         self.criterion = nn.CrossEntropyLoss()
 
@@ -73,17 +72,17 @@ class DisjointEncoding(nn.Module):
                 im, labels = data
                 im, labels = im.to(device), labels.to(device)
 
-                global_repr, summary_repr, relation_repr = self.compute_reprs(im)
-                epoch_state = self.predict(global_repr, summary_repr, relation_repr, labels, epoch_state)
+                global_repr, summary_repr, relation_logits = self.compute_reprs(im)
+                epoch_state = self.predict(global_repr, summary_repr, relation_logits, labels, epoch_state)
 
-                loss = self.proxy_criterion(relation_repr, labels)
+                loss = self.criterion(relation_logits, labels)
                 epoch_state['loss'] += loss.item()
 
             self.post_epoch('Test', epoch, epoch_state, len(testloader.dataset), None)
 
     def compute_reprs(self, im):
         global_embed, local_embeds = self.backbone(im)
-        global_embed = global_embed.detach()
+        global_embed = global_embed
 
         summary_repr = global_embed
         # summary_repr = self.aggregator(local_embeds)
