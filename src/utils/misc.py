@@ -9,6 +9,7 @@ from torchvision import datasets
 
 from models.relational_proxies import RelationalProxies
 from models.global_only import GlobalOnly
+from models.holistic_encoding import HolisticEncoding
 from networks.encoder import DisjointEncoder
 from utils import constants
 from utils.auto_load_resume import auto_load_resume
@@ -102,9 +103,12 @@ class Initializers:
         if args.model_type == 'relational_proxies':
             model = RelationalProxies(backbone, args.n_classes, logdir)
             print('[INFO] Model: Relational Proxies')
-        elif args.model_type == 'disjoint_encoding':
+        elif args.model_type == 'global_only':
             model = GlobalOnly(backbone, args.n_classes, logdir, args.train_backbone)
-            print('[INFO] Model: Disjoint Encoding')
+            print('[INFO] Model: Global Only')
+        elif args.model_type == 'holistic_encoding':
+            model = HolisticEncoding(backbone, args.n_classes, logdir, args.train_backbone)
+            print('[INFO] Model: Holistic Encoding')
         model.to(device)
         self.model = model
 

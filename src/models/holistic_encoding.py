@@ -13,9 +13,9 @@ from utils import constants
 from functools import partial
 
 
-class GlobalOnly(nn.Module):
+class HolisticEncoding(nn.Module):
     def __init__(self, backbone, num_classes, logdir, train_backbone):
-        super(GlobalOnly, self).__init__()
+        super(HolisticEncoding, self).__init__()
         self.num_classes = num_classes
         self.feature_dim = constants.FEATURE_DIM
         self.lr = constants.INIT_LR
@@ -23,6 +23,8 @@ class GlobalOnly(nn.Module):
         self.backbone = backbone
         self.aggregator = partial(torch.flatten, start_dim=-2, end_dim=-1)
 
+        # self.relation_net = DisjointRelationNet(feature_dim=(self.feature_dim * (backbone.num_local + 1)),
+        #                                 out_dim=self.feature_dim, num_classes=num_classes)
         self.relation_net = DisjointRelationNet(feature_dim=self.feature_dim * 2, out_dim=self.feature_dim, num_classes=num_classes)
         if not train_backbone:
             for param in backbone.parameters():
@@ -48,14 +50,14 @@ class GlobalOnly(nn.Module):
 
             self.optimizer.zero_grad()
 
-            global_repr, summary_repr, relation_logits = self.compute_reprs(im)
-            loss = self.criterion(relation_logits, labels)
+            global_repr, summary_logits, relation_logits = self.compute_reprs(im)
+            loss = self.criterion(relation_logits, labels) + self.criterion(summary_logits, labels)
 
             loss.backward()
             self.optimizer.step()
 
             epoch_state['loss'] += loss.item()
-            epoch_state = self.predict(global_repr, summary_repr, relation_logits, labels, epoch_state)
+            epoch_state = self.predict(global_repr, summary_logits, relation_logits, labels, epoch_state)
 
         self.post_epoch('Train', epoch, epoch_state, len(trainloader.dataset), save_path)
 
@@ -80,10 +82,9 @@ class GlobalOnly(nn.Module):
 
     def compute_reprs(self, im):
         global_embed, local_embeds = self.backbone(im)
-        global_embed = global_embed
+        _, summary_embed, _ = self.backbone.extractor(im)
 
-        summary_repr = global_embed
-        # summary_repr = self.aggregator(local_embeds)
+        summary_repr = self.relation_net(summary_embed, summary_embed)
         relation_repr = self.relation_net(global_embed, global_embed)  # self.relation_net(global_embed, summary_repr)
 
         return global_embed, summary_repr, relation_repr
