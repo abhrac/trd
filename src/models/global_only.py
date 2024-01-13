@@ -13,9 +13,9 @@ from utils import constants
 from functools import partial
 
 
-class DisjointEncoding(nn.Module):
+class GlobalOnly(nn.Module):
     def __init__(self, backbone, num_classes, logdir, train_backbone):
-        super(DisjointEncoding, self).__init__()
+        super(GlobalOnly, self).__init__()
         self.num_classes = num_classes
         self.feature_dim = constants.FEATURE_DIM
         self.lr = constants.INIT_LR

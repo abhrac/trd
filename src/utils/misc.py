@@ -8,7 +8,7 @@ from PIL import Image
 from torchvision import datasets
 
 from models.relational_proxies import RelationalProxies
-from models.disjoint_encoding import DisjointEncoding
+from models.global_only import GlobalOnly
 from networks.encoder import DisjointEncoder
 from utils import constants
 from utils.auto_load_resume import auto_load_resume
@@ -103,7 +103,7 @@ class Initializers:
             model = RelationalProxies(backbone, args.n_classes, logdir)
             print('[INFO] Model: Relational Proxies')
         elif args.model_type == 'disjoint_encoding':
-            model = DisjointEncoding(backbone, args.n_classes, logdir, args.train_backbone)
+            model = GlobalOnly(backbone, args.n_classes, logdir, args.train_backbone)
             print('[INFO] Model: Disjoint Encoding')
         model.to(device)
         self.model = model
