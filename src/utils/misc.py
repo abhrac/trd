@@ -10,6 +10,7 @@ from torchvision import datasets
 from models.relational_proxies import RelationalProxies
 from models.global_only import GlobalOnly
 from models.holistic_encoding import HolisticEncoding
+from models.disjoint_encoding import DisjointEncoding
 from networks.encoder import DisjointEncoder
 from utils import constants
 from utils.auto_load_resume import auto_load_resume
@@ -109,6 +110,9 @@ class Initializers:
         elif args.model_type == 'holistic_encoding':
             model = HolisticEncoding(backbone, args.n_classes, logdir, args.train_backbone)
             print('[INFO] Model: Holistic Encoding')
+        elif args.model_type == 'disjoint_encoding':
+            model = DisjointEncoding(backbone, args.n_classes, logdir, args.train_backbone)
+            print('[INFO] Model: Disjoint Encoding')
         model.to(device)
         self.model = model
 
