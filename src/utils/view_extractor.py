@@ -63,10 +63,13 @@ def extract_global(x, extractor):
     return global_view
 
 
-def extract_local(global_view, num_local):
+def extract_local(global_view, num_local, crop_mode):
     random_cropper = T.Compose([T.RandomCrop(size=global_view.shape[-1] // 3), T.Resize((224, 224))])
-    local_views = [random_cropper(global_view) for _ in range(num_local - 5)]
-    local_views.extend(T.FiveCrop((224, 224))(global_view))
+    if crop_mode == 'random':
+        local_views = [random_cropper(global_view) for _ in range(num_local)]
+    elif crop_mode == 'five_crops':
+        local_views = [random_cropper(global_view) for _ in range(num_local - 5)]
+        local_views.extend(T.FiveCrop((224, 224))(global_view))
 
     local_views = torch.cat(local_views)
     return local_views

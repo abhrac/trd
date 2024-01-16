@@ -23,6 +23,8 @@ class Options:
                             help="Whether to load pretrained weights")
         parser.add_argument("--train-backbone", action='store_true', default=False,
                             help="Whether to update backbone weights.")
+        parser.add_argument("--crop-mode", default="random",
+                            help="Process of local view extraction. Options: random, five_crop")
 
         # Misc
         parser.add_argument("--seed", default=-1, type=int, help="Seed for Numpy and PyTorch. Default: -1 (None)")
