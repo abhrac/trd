@@ -23,7 +23,7 @@ class DisjointRelationNet(nn.Module):
                                     nn.LeakyReLU(),
                                     nn.Linear(feature_dim * 2, out_dim),
                                     nn.LeakyReLU(),
-                                    nn.Linear(out_dim, out_dim, num_classes),
+                                    nn.Linear(out_dim, num_classes),
                                     )
 
     def forward(self, features_1, features_2):
