@@ -23,8 +23,8 @@ class TransformerAgg(nn.Module):
 
         self.backbone = backbone
         self.aggregator = timm.create_model('vit_small_patch16_224.augreg_in21k', pretrained=True)
-        for param in self.aggregator.parameters():
-            param.requires_grad = False
+        # for param in self.aggregator.parameters():
+        #     param.requires_grad = False
 
         self.relation_net = DisjointRelationNet(feature_dim=self.feature_dim * 2, out_dim=self.feature_dim, num_classes=num_classes)
         self.agg_net = DisjointRelationNet(feature_dim=384 * 2, out_dim=self.feature_dim, num_classes=num_classes)
@@ -34,7 +34,7 @@ class TransformerAgg(nn.Module):
                 param.requires_grad = False
             trainable_params = chain(self.relation_net.parameters(), self.agg_net.parameters())
         else:
-            trainable_params = chain(backbone.parameters(), self.relation_net.parameters(), self.agg_net.parameters())
+            trainable_params = chain(backbone.parameters(), self.relation_net.parameters(), self.agg_net.parameters(), self.aggregator.parameters())
 
         self.optimizer = torch.optim.SGD(trainable_params, lr=self.lr, momentum=constants.MOMENTUM, weight_decay=constants.WEIGHT_DECAY)
         self.scheduler = MultiStepLR(self.optimizer, milestones=constants.LR_MILESTONES, gamma=constants.LR_DECAY_RATE)
@@ -54,7 +54,8 @@ class TransformerAgg(nn.Module):
             self.optimizer.zero_grad()
 
             global_logits, local_logits, sem_logits = self.compute_reprs(im)
-            loss = self.criterion(sem_logits, labels) + self.criterion(global_logits, labels) + 1e-8 * self.criterion(local_logits, labels)
+            # loss = self.criterion(sem_logits, labels) + self.criterion(global_logits, labels) + 1e-8 * self.criterion(local_logits, labels)
+            loss = self.criterion(sem_logits + global_logits + local_logits, labels)
 
             loss.backward()
             self.optimizer.step()
@@ -84,14 +85,15 @@ class TransformerAgg(nn.Module):
             self.post_epoch('Test', epoch, epoch_state, len(testloader.dataset), None)
 
     def compute_reprs(self, im):
-        global_embed, local_embeds = self.backbone(im)
+        global_embed, local_embeds, global_view, local_views = self.backbone.forward_with_views(im)
         local_embeds = local_embeds.transpose(0, 1)  # Bring batch dimension first
         _, global_embed, _ = self.backbone.extractor(im)
         local_logits = []
         for view in local_embeds:
             local_logits.append(self.relation_net(view, view))
         
-        local_repr = self.aggregator.forward_features(Fv.resize(im, size=(224, 224)))[:, 0]  # class token
+        # local_repr = self.aggregator.forward_features(Fv.resize(im, size=(224, 224)))[:, 0]  # class token
+        local_repr = self.aggregator.forward_features(Fv.resize(global_view, size=(224, 224)))[:, 0]  # class token
         local_logits = self.agg_net(local_repr, local_repr)
         
         global_logits = self.relation_net(global_embed, global_embed)
@@ -100,8 +102,8 @@ class TransformerAgg(nn.Module):
         return global_logits, local_logits, sem_logits
 
     @torch.no_grad()
-    def predict(self, global_repr, summary_repr, relation_logits, labels, epoch_state):
-        pred = relation_logits.max(1, keepdim=True)[1]
+    def predict(self, global_logits, local_logits, relation_logits, labels, epoch_state):
+        pred = (global_logits + local_logits + relation_logits).max(1, keepdim=True)[1]
         epoch_state['correct'] += pred.eq(labels.view_as(pred)).sum().item()
 
         return epoch_state

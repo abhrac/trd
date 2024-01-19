@@ -23,3 +23,13 @@ class DisjointEncoder(nn.Module):
         local_embeds = local_embeds.reshape(len(x), self.num_local, -1)
 
         return global_embed, local_embeds
+
+    def forward_with_views(self, x):
+        global_view = ve.extract_global(x, self.extractor).to(self.DEVICE)
+        global_fm, global_embed, _ = self.extractor(global_view.detach())
+
+        local_views = ve.extract_local(global_view, self.num_local, crop_mode=self.crop_mode)
+        _, local_embeds, _ = self.extractor(local_views)
+        local_embeds = local_embeds.reshape(len(x), self.num_local, -1)
+
+        return global_embed, local_embeds, global_view, local_views
