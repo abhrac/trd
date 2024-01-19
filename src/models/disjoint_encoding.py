@@ -52,7 +52,7 @@ class DisjointEncoding(nn.Module):
             loss = self.criterion(sem_logits, labels) + self.criterion(global_logits, labels)
             loss = self.criterion(sem_logits, labels) + self.criterion(global_logits, labels)
             for local_logit in local_logits:
-                loss += 1e-6 * self.criterion(local_logit, labels)
+                loss += 1e-8 * self.criterion(local_logit, labels)
 
             loss.backward()
             self.optimizer.step()
