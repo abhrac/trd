@@ -88,10 +88,8 @@ class TransformerAgg(nn.Module):
         global_embed, local_embeds, global_view, local_views = self.backbone.forward_with_views(im)
         local_embeds = local_embeds.transpose(0, 1)  # Bring batch dimension first
         _, global_embed, _ = self.backbone.extractor(im)
-        local_logits = []
-        for view in local_embeds:
-            local_logits.append(self.relation_net(view, view))
         
+        local_logits =  self.aggregator.forward_features(local_views)[:, 0].reshape((len(im), self.backbone.num_local, -1)).sum(dim=1)
         # local_repr = self.aggregator.forward_features(Fv.resize(im, size=(224, 224)))[:, 0]  # class token
         local_repr = self.aggregator.forward_features(Fv.resize(global_view, size=(224, 224)))[:, 0]  # class token
         local_logits = self.agg_net(local_repr, local_repr)
