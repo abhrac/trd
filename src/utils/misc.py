@@ -115,7 +115,7 @@ class Initializers:
             model = DisjointEncoding(backbone, args.n_classes, logdir, args.train_backbone)
             print('[INFO] Model: Disjoint Encoding')
         elif args.model_type == 'transformer_agg':
-            model = TransformerAgg(backbone, args.n_classes, logdir, args.train_backbone)
+            model = TransformerAgg(backbone, args.n_classes, logdir, args.train_backbone, args.local_weight)
             print('[INFO] Model: Transformer-based aggregation of local views')
         model.to(device)
         self.model = model
