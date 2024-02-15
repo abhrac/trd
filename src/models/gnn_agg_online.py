@@ -58,14 +58,15 @@ class GNNAggOnline(nn.Module):
         self.aggregator = GCN(num_in_features=self.feature_dim, num_out_features=self.feature_dim)
 
         self.relation_net = DisjointRelationNet(feature_dim=self.feature_dim * 2, out_dim=self.feature_dim, num_classes=num_classes)
+        self.global_net = DisjointRelationNet(feature_dim=self.feature_dim * 2, out_dim=self.feature_dim, num_classes=num_classes)
         self.agg_net = DisjointRelationNet(feature_dim=self.feature_dim * 2, out_dim=self.feature_dim, num_classes=num_classes)
 
         if not train_backbone:
             for param in backbone.parameters():
                 param.requires_grad = False
-            trainable_params = chain(self.relation_net.parameters(), self.agg_net.parameters())
+            trainable_params = chain(self.relation_net.parameters(), self.global_net.parameters(), self.agg_net.parameters())
         else:
-            trainable_params = chain(backbone.parameters(), self.relation_net.parameters(),
+            trainable_params = chain(backbone.parameters(), self.relation_net.parameters(), self.global_net.parameters(),
                                      self.agg_net.parameters(), self.aggregator.parameters())
 
         self.optimizer = torch.optim.SGD(trainable_params, lr=self.lr, momentum=constants.MOMENTUM, weight_decay=constants.WEIGHT_DECAY)
@@ -125,8 +126,8 @@ class GNNAggOnline(nn.Module):
         gcn_embed = semrel_graphs.reshape(len(im), local_embeds.shape[1], -1)  # batch_size x num_local
         agg_embed = gcn_embed.mean(dim=1)
 
-        local_logits = self.agg_net(agg_embed, agg_embed)
-        global_logits = self.relation_net(global_embed, global_embed)
+        local_logits = self.agg_net(agg_embed, global_embed)
+        global_logits = self.global_net(full_embed, global_embed)
         sem_logits = self.relation_net(global_embed, agg_embed)
 
         return global_logits, local_logits, sem_logits
