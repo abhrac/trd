@@ -13,6 +13,7 @@ from models.holistic_encoding import HolisticEncoding
 from models.disjoint_encoding import DisjointEncoding
 from models.transformer_agg import TransformerAgg
 from models.gnn_agg_ondisk import GNNAggOnDisk
+from models.gnn_agg_online import GNNAggOnline
 from networks.encoder import DisjointEncoder
 from utils import constants
 from utils.auto_load_resume import auto_load_resume
@@ -121,6 +122,9 @@ class Initializers:
         elif args.model_type == 'gnn_agg_ondisk':
             model = GNNAggOnDisk(backbone, args.n_classes, logdir, args.train_backbone, args.local_weight)
             print('[INFO] Model: GNN-based aggregation of local views (with on-disk staging)')
+        elif args.model_type == 'gnn_agg_online':
+            model = GNNAggOnline(backbone, args.n_classes, logdir, args.train_backbone, args.local_weight)
+            print('[INFO] Model: GNN-based aggregation of local views (online)')
         model.to(device)
         self.model = model
 
