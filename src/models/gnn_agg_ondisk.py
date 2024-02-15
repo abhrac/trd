@@ -76,9 +76,9 @@ class LocalGraphs(InMemoryDataset):
         [os.remove(file) for file in glob.glob('graphs/*.pth')]
         shutil.rmtree('./processed', ignore_errors=True)
 
-class GNNAgg(nn.Module):
+class GNNAggOnDisk(nn.Module):
     def __init__(self, backbone, num_classes, logdir, train_backbone, local_weight):
-        super(GNNAgg, self).__init__()
+        super(GNNAggOnDisk, self).__init__()
         self.num_classes = num_classes
         self.feature_dim = constants.FEATURE_DIM
         self.lr = constants.INIT_LR
