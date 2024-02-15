@@ -117,17 +117,17 @@ class GNNAggOnline(nn.Module):
 
     def compute_reprs(self, im):
         global_embed, local_embeds, global_view, local_views = self.backbone.forward_with_views(im)
-        _, global_embed, _ = self.backbone.extractor(im)
+        _, full_embed, _ = self.backbone.extractor(im)
         
         graphs = graphgen(local_embeds)
         graph_loader = DataLoader(graphs, batch_size=len(im))
         semrel_graphs = self.aggregator(next(iter(graph_loader)))
-        gcn_out = semrel_graphs.reshape(len(im), local_embeds.shape[1], -1)  # batch_size x num_local
-        agg_out = gcn_out.mean(dim=1)
+        gcn_embed = semrel_graphs.reshape(len(im), local_embeds.shape[1], -1)  # batch_size x num_local
+        agg_embed = gcn_embed.mean(dim=1)
 
-        local_logits = self.agg_net(agg_out, agg_out)
+        local_logits = self.agg_net(agg_embed, agg_embed)
         global_logits = self.relation_net(global_embed, global_embed)
-        sem_logits = self.relation_net(global_embed, local_logits)
+        sem_logits = self.relation_net(global_embed, agg_embed)
 
         return global_logits, local_logits, sem_logits
 
