@@ -12,6 +12,7 @@ from models.global_only import GlobalOnly
 from models.holistic_encoding import HolisticEncoding
 from models.disjoint_encoding import DisjointEncoding
 from models.transformer_agg import TransformerAgg
+from models.gnn_agg import GNNAgg
 from networks.encoder import DisjointEncoder
 from utils import constants
 from utils.auto_load_resume import auto_load_resume
@@ -117,6 +118,9 @@ class Initializers:
         elif args.model_type == 'transformer_agg':
             model = TransformerAgg(backbone, args.n_classes, logdir, args.train_backbone, args.local_weight)
             print('[INFO] Model: Transformer-based aggregation of local views')
+        elif args.model_type == 'gnn_agg':
+            model = GNNAgg(backbone, args.n_classes, logdir, args.train_backbone, args.local_weight)
+            print('[INFO] Model: GNN-based aggregation of local views')
         model.to(device)
         self.model = model
 
