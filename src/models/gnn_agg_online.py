@@ -15,7 +15,7 @@ from tensorboardX import SummaryWriter
 from torch_geometric.data import DataLoader
 from torch_geometric.data import InMemoryDataset, Data
 
-from networks.relation_net import DisjointRelationNet
+from networks.relation_net import DisjointRelationNet, Mapper
 from networks.gcn import GCN
 from utils import constants
 
@@ -58,8 +58,8 @@ class GNNAggOnline(nn.Module):
         self.aggregator = GCN(num_in_features=self.feature_dim, num_out_features=self.feature_dim)
 
         self.relation_net = DisjointRelationNet(feature_dim=self.feature_dim * 2, out_dim=self.feature_dim, num_classes=num_classes)
-        self.global_net = DisjointRelationNet(feature_dim=self.feature_dim * 2, out_dim=self.feature_dim, num_classes=num_classes)
-        self.agg_net = DisjointRelationNet(feature_dim=self.feature_dim * 2, out_dim=self.feature_dim, num_classes=num_classes)
+        self.global_net = Mapper(feature_dim=self.feature_dim, out_dim=self.feature_dim, num_classes=num_classes)
+        self.agg_net = Mapper(feature_dim=self.feature_dim, out_dim=self.feature_dim, num_classes=num_classes)
 
         if not train_backbone:
             for param in backbone.parameters():
@@ -126,9 +126,9 @@ class GNNAggOnline(nn.Module):
         gcn_embed = semrel_graphs.reshape(len(im), local_embeds.shape[1], -1)  # batch_size x num_local
         agg_embed = gcn_embed.mean(dim=1)
 
-        local_logits = self.agg_net(agg_embed, global_embed)
-        global_logits = self.global_net(full_embed, global_embed)
-        sem_logits = self.relation_net(global_embed, agg_embed)
+        local_logits = self.agg_net(agg_embed) + self.global_net(full_embed)
+        global_logits = self.global_net(global_embed) + self.global_net(full_embed)
+        sem_logits = self.relation_net(global_embed, agg_embed) + self.global_net(full_embed)
 
         return global_logits, local_logits, sem_logits
 
