@@ -9,13 +9,14 @@ This project is implemented using PyTorch. A pip environment with all related de
 git clone https://github.com/abhrac/trd.git
 cd trd
 ```
-2. Install dependencies:
+2. Install dependencies and activate conda environment:
 ```shell
-pip install -r packages.txt
+conda env create -f environment.yml
+conda activate trd
 ```
 3. Run:
 ```shell
-python3 src/main.py --dataset='StanfordCars' --seed=0 --backbone=vit_small_patch16_384 --method graphrel_hausdorff --pretrained --epochs=100 --batch_size=8
+python3 src/main.py --dataset='FGVCAircraft' --seed=0 --model-type=multiview_hausdorff --train-backbone --crop-mode=random --local-weight=1e-4 --train-bsize=8 --gpu=1 --recovery-epoch=1
 ```
 The `run_expt.sh` file contains sample training commands.
 
