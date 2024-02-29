@@ -1,4 +1,4 @@
-name: relational-proxies
+name: trd
 channels:
   - pytorch
   - pyg
