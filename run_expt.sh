@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+python3 src/main.py --dataset='FGVCAircraft' --seed=0 --model-type=multiview_hausdorff --train-backbone --crop-mode=random --local-weight=1e-4 --train-bsize=8 --gpu=1 --recovery-epoch=1
 python3 src/main.py --dataset='FGVCAircraft' --seed=0 --model-type=gnn_agg_hausdorff --train-backbone --crop-mode=random --local-weight=1 --train-bsize=16 --gpu=1
 # python3 src/main.py --dataset='FGVCAircraft' --seed=0 --model-type=transformer_agg --train-backbone --crop-mode=random --local-weight=1
 # python3 src/main.py --dataset='FGVCAircraft' --seed=0 --pretrained

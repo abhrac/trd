@@ -25,7 +25,8 @@ class Options:
                             help="Whether to update backbone weights.")
         parser.add_argument("--crop-mode", default="random",
                             help="Process of local view extraction. Options: random, five_crop")
-        parser.add_argument("--local-weight", default=1e-8, type=float, help="Weight of local views.")
+        parser.add_argument("--local-weight", default=1e-4, type=float, help="Weight of local views.")
+        parser.add_argument("--recovery-epoch", default=1, type=int, help="Beginning of the transitivity recovery phase.")
 
         # Misc
         parser.add_argument("--seed", default=-1, type=int, help="Seed for Numpy and PyTorch. Default: -1 (None)")

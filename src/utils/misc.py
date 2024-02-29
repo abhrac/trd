@@ -15,6 +15,7 @@ from models.transformer_agg import TransformerAgg
 from models.gnn_agg_ondisk import GNNAggOnDisk
 from models.gnn_agg_online import GNNAggOnline
 from models.gnn_agg_hausdorff import GNNAggHausdorff
+from models.multiview_hausdorff import MultiViewHausdorff
 from networks.encoder import DisjointEncoder
 from utils import constants
 from utils.auto_load_resume import auto_load_resume
@@ -129,6 +130,9 @@ class Initializers:
         elif args.model_type == 'gnn_agg_hausdorff':
             model = GNNAggHausdorff(backbone, args.n_classes, logdir, args.train_backbone, args.local_weight)
             print('[INFO] Model: GNN-based aggregation with Hausdorff distance')
+        elif args.model_type == 'multiview_hausdorff':
+            model = MultiViewHausdorff(backbone, args.n_classes, logdir, args.train_backbone, args.local_weight, args.recovery_epoch)
+            print('[INFO] Model: GNN-based aggregation with Multi-view Hausdorff distance minimization')
         model.to(device)
         self.model = model
 
