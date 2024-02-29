@@ -3,7 +3,7 @@ Official implementation of "[Transitivity Recovering Decompositions: Interpretab
 
 ## Environment Setup
 
-This project is implemented using PyTorch. A pip environment with all related dependencies can be created as follows:
+This project is implemented using PyTorch and PyTorch Geometric as the backbone. A conda environment with all related dependencies can be created as follows:
 1. Clone the project repository:
 ```shell
 git clone https://github.com/abhrac/trd.git
