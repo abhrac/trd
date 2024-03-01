@@ -19,7 +19,7 @@ from models.multiview_hausdorff import MultiViewHausdorff
 from networks.encoder import DisjointEncoder
 from utils import constants
 from utils.auto_load_resume import auto_load_resume
-from utils.factory import Backbones
+from utils.factory import Factory
 
 
 class Initializers:
@@ -27,8 +27,13 @@ class Initializers:
         self.args = args
         self.device = None
         self.model = None
-        self.backbones = Backbones(args)
         self.task = args.task
+
+        if args.logdir is None:
+            args.logdir = os.path.join(args.checkpoint, args.dataset, 'logdir')
+
+        self.factory = Factory(args)
+
 
     def env(self):
         args = self.args
@@ -101,41 +106,10 @@ class Initializers:
     def modeltype(self):
         args, device = self.args, self.device
         # Get the pretrained backbone for extracting views
-        backbone = self.backbones.get(self.task)
+        backbone = self.factory.get_backbone(self.task)
         print("[INFO]", str(str(constants.BACKBONE)), "loaded in memory.")
 
-        if args.logdir is None:
-            logdir = os.path.join(args.checkpoint, args.dataset, 'logdir')
-        else:
-            logdir = args.logdir
-        
-        if args.model_type == 'relational_proxies':
-            model = RelationalProxies(backbone, args.n_classes, logdir)
-            print('[INFO] Model: Relational Proxies')
-        elif args.model_type == 'global_only':
-            model = GlobalOnly(backbone, args.n_classes, logdir, args.train_backbone)
-            print('[INFO] Model: Global Only')
-        elif args.model_type == 'holistic_encoding':
-            model = HolisticEncoding(backbone, args.n_classes, logdir, args.train_backbone)
-            print('[INFO] Model: Holistic Encoding')
-        elif args.model_type == 'disjoint_encoding':
-            model = DisjointEncoding(backbone, args.n_classes, logdir, args.train_backbone)
-            print('[INFO] Model: Disjoint Encoding')
-        elif args.model_type == 'transformer_agg':
-            model = TransformerAgg(backbone, args.n_classes, logdir, args.train_backbone, args.local_weight)
-            print('[INFO] Model: Transformer-based aggregation of local views')
-        elif args.model_type == 'gnn_agg_ondisk':
-            model = GNNAggOnDisk(backbone, args.n_classes, logdir, args.train_backbone, args.local_weight)
-            print('[INFO] Model: GNN-based aggregation of local views (with on-disk staging)')
-        elif args.model_type == 'gnn_agg_online':
-            model = GNNAggOnline(backbone, args.n_classes, logdir, args.train_backbone, args.local_weight)
-            print('[INFO] Model: GNN-based aggregation of local views (online)')
-        elif args.model_type == 'gnn_agg_hausdorff':
-            model = GNNAggHausdorff(backbone, args.n_classes, logdir, args.train_backbone, args.local_weight)
-            print('[INFO] Model: GNN-based aggregation with Hausdorff distance')
-        elif args.model_type == 'multiview_hausdorff':
-            model = MultiViewHausdorff(backbone, args.n_classes, logdir, args.train_backbone, args.local_weight, args.recovery_epoch)
-            print('[INFO] Model: GNN-based aggregation with Multi-view Hausdorff distance minimization')
+        model = self.factory.get_executor(args.model_type, backbone)
         model.to(device)
         self.model = model
 
