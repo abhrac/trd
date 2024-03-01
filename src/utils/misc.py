@@ -19,7 +19,7 @@ from models.multiview_hausdorff import MultiViewHausdorff
 from networks.encoder import DisjointEncoder
 from utils import constants
 from utils.auto_load_resume import auto_load_resume
-from utils.backbones import Backbones
+from utils.factory import Backbones
 
 
 class Initializers:
