@@ -19,6 +19,7 @@ from models.multiview_hausdorff import MultiViewHausdorff
 from networks.encoder import DisjointEncoder
 from utils import constants
 from utils.auto_load_resume import auto_load_resume
+from utils.backbones import Backbones
 
 
 class Initializers:
@@ -26,6 +27,8 @@ class Initializers:
         self.args = args
         self.device = None
         self.model = None
+        self.backbones = Backbones(args)
+        self.task = args.task
 
     def env(self):
         args = self.args
@@ -97,8 +100,8 @@ class Initializers:
 
     def modeltype(self):
         args, device = self.args, self.device
-        # Get the pretrained backbone for extracting global-views
-        backbone = DisjointEncoder(num_classes=args.n_classes, num_local=args.n_local, crop_mode=args.crop_mode)
+        # Get the pretrained backbone for extracting views
+        backbone = self.backbones.get(self.task)
         print("[INFO]", str(str(constants.BACKBONE)), "loaded in memory.")
 
         if args.logdir is None:
