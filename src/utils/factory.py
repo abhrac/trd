@@ -10,10 +10,36 @@ from models.gnn_agg_online import GNNAggOnline
 from models.gnn_agg_hausdorff import GNNAggHausdorff
 from models.multiview_hausdorff import MultiViewHausdorff
 
+
 class Factory:
     def __init__(self, args) -> None:
         self.args = args
+        self.backbones = Backbones(args)
+        self.executors = Executors(args)
+
+    def get_backbone(self, task):
+        return self.backbones.get(task)
+    
+    def get_executor(self, model_type, backbone):
+        return self.executors.get(model_type, backbone)
+
+
+class Backbones:
+    def __init__(self, args) -> None:
+        self.args = args
         self.backbones = {'fgvc': self._disjoint_encoder}
+
+    def _disjoint_encoder(self):
+        args = self.args
+        return DisjointEncoder(num_classes=args.n_classes, num_local=args.n_local, crop_mode=args.crop_mode)
+    
+    def get(self, task):
+        return self.backbones[task]()
+
+
+class Executors:
+    def __init__(self, args) -> None:
+        self.args = args
         self.executors = {'relational_proxies': self._relational_proxies,
                           'global_only':self._global_only,
                           'holistic_encoding':self._holistic_encoding,
@@ -24,12 +50,6 @@ class Factory:
                           'gnn_agg_hausdorff':self._gnn_agg_hausdorff,
                           'multiview_hausdorff':self._multiview_hausdorff}
 
-    ############################## Backbones ##############################
-    def _disjoint_encoder(self):
-        args = self.args
-        return DisjointEncoder(num_classes=args.n_classes, num_local=args.n_local, crop_mode=args.crop_mode)
-    
-    ############################## Executors ##############################
     def _relational_proxies(self, backbone):
         args = self.args
         print('[INFO] Model: Relational Proxies')
@@ -74,9 +94,6 @@ class Factory:
         args = self.args
         print('[INFO] Model: GNN-based aggregation with Multi-view Hausdorff distance minimization')
         return MultiViewHausdorff(backbone, args.n_classes, args.logdir, args.train_backbone, args.local_weight, args.recovery_epoch)
-
-    def get_backbone(self, task):
-        return self.backbones[task]()
     
-    def get_executor(self, model_type, backbone):
+    def get(self, model_type, backbone):
         return self.executors[model_type](backbone)
