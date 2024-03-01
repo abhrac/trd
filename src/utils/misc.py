@@ -7,16 +7,6 @@ import torchvision.transforms as transforms
 from PIL import Image
 from torchvision import datasets
 
-from models.relational_proxies import RelationalProxies
-from models.global_only import GlobalOnly
-from models.holistic_encoding import HolisticEncoding
-from models.disjoint_encoding import DisjointEncoding
-from models.transformer_agg import TransformerAgg
-from models.gnn_agg_ondisk import GNNAggOnDisk
-from models.gnn_agg_online import GNNAggOnline
-from models.gnn_agg_hausdorff import GNNAggHausdorff
-from models.multiview_hausdorff import MultiViewHausdorff
-from networks.encoder import DisjointEncoder
 from utils import constants
 from utils.auto_load_resume import auto_load_resume
 from utils.factory import Factory
