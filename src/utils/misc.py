@@ -98,7 +98,7 @@ class Initializers:
     def modeltype(self):
         args, device = self.args, self.device
         # Get the pretrained backbone for extracting global-views
-        backbone = DisjointEncoder(num_classes=args.n_classes, num_local=args.n_local, device=device, crop_mode=args.crop_mode)
+        backbone = DisjointEncoder(num_classes=args.n_classes, num_local=args.n_local, crop_mode=args.crop_mode)
         print("[INFO]", str(str(constants.BACKBONE)), "loaded in memory.")
 
         if args.logdir is None:
