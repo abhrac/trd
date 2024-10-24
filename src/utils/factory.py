@@ -13,6 +13,7 @@ from models.gnn_agg_ondisk import GNNAggOnDisk
 from models.gnn_agg_online import GNNAggOnline
 from models.gnn_agg_hausdorff import GNNAggHausdorff
 from models.multiview_hausdorff import MultiViewHausdorff
+from models.proxy_graph import ProxyGraph
 
 from utils import constants
 from utils.transforms import RProxyTransformTrain, RProxyTransformTest
@@ -52,14 +53,15 @@ class Executors:
     def __init__(self, args) -> None:
         self.args = args
         self.executors = {'relational_proxies': self._relational_proxies,
-                          'global_only':self._global_only,
-                          'holistic_encoding':self._holistic_encoding,
-                          'disjoint_encoding':self._disjoint_encoding,
-                          'transformer_agg':self._transformer_agg,
-                          'gnn_agg_ondisk':self._gnn_agg_on_disk,
-                          'gnn_agg_online':self._gnn_agg_online,
-                          'gnn_agg_hausdorff':self._gnn_agg_hausdorff,
-                          'multiview_hausdorff':self._multiview_hausdorff}
+                          'global_only': self._global_only,
+                          'holistic_encoding': self._holistic_encoding,
+                          'disjoint_encoding': self._disjoint_encoding,
+                          'transformer_agg': self._transformer_agg,
+                          'gnn_agg_ondisk': self._gnn_agg_on_disk,
+                          'gnn_agg_online': self._gnn_agg_online,
+                          'gnn_agg_hausdorff': self._gnn_agg_hausdorff,
+                          'multiview_hausdorff': self._multiview_hausdorff,
+                          'proxy_graph': self._proxy_graph}
 
     def _relational_proxies(self, backbone):
         args = self.args
@@ -105,7 +107,12 @@ class Executors:
         args = self.args
         print('[INFO] Model: GNN-based aggregation with Multi-view Hausdorff distance minimization')
         return MultiViewHausdorff(backbone, args.n_classes, args.logdir, args.train_backbone, args.local_weight, args.recovery_epoch)
-    
+
+    def _proxy_graph(self, backbone):
+        args = self.args
+        print('[INFO] Model: GNN-based aggregation with Proxy-based Graph Matching')
+        return ProxyGraph(backbone, args.n_classes, args.logdir, args.train_backbone, args.local_weight, args.recovery_epoch)
+
     def get(self, model_type, backbone):
         return self.executors[model_type](backbone)
 
