@@ -12,6 +12,7 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.data import Data
 
 from networks.relation_net import DisjointRelationNet, Mapper
+from networks.class_proxy import ProxyHead, create_proxy_graphs
 from networks.gcn import GCN
 from utils import constants
 
@@ -83,7 +84,7 @@ class ProxyGraph(nn.Module):
         self.backbone = backbone
         self.aggregator = GCN(num_in_features=self.feature_dim, num_out_features=self.feature_dim)
         self.num_local = backbone.num_local
-        self.proxy_heads = [Mapper(feature_dim=self.feature_dim, out_dim=self.feature_dim, num_classes=num_classes) for _ in range(self.num_local)]
+        self.proxy_heads = [ProxyHead(feature_dim=self.feature_dim, out_dim=self.feature_dim, num_classes=num_classes) for _ in range(self.num_local)]
 
         self.relation_net = DisjointRelationNet(feature_dim=self.feature_dim * 2, out_dim=self.feature_dim, num_classes=num_classes)
         self.global_net = Mapper(feature_dim=self.feature_dim, out_dim=self.feature_dim, num_classes=num_classes)
@@ -110,28 +111,30 @@ class ProxyGraph(nn.Module):
         recovery_weight = (epoch == self.recovery_epoch) * self.local_weight
         epoch_state = {'loss': 0, 'correct': 0}
         self.proxy_heads = [head.to(device) for head in self.proxy_heads]
-        for i, data in enumerate(tqdm(trainloader)):
+        for _, data in enumerate(tqdm(trainloader)):
             im, labels = data
             im, labels = im.to(device), labels.to(device)
 
             self.optimizer.zero_grad()
 
             global_logits, local_logits, sem_logits, semrel_graphs = self.compute_reprs(im)
-            assignments = torch.cat([head(semrel_graphs.flatten(0,1)) for head in self.proxy_heads])
+            view_loss = self.criterion(sem_logits + (recovery_weight * local_logits) + global_logits, labels)
 
+            assignments = torch.cat([head(semrel_graphs.flatten(0,1)) for head in self.proxy_heads])
             # Useful for fetching specific proxy-view assignment scores and computing a mask matrix.
             # sample_idx = torch.tensor(range(len(im))).unsqueeze(-1).expand(-1, self.num_local).flatten().unsqueeze(-1).to(device)
             # view_idx = torch.tensor([range(self.num_local)]).expand(len(im), -1).flatten().unsqueeze(-1).to(device)
-            
+
             view_labels = labels.unsqueeze(-1).expand(-1, self.num_local).flatten()
             view_labels = view_labels.unsqueeze(-1).expand(-1, len(self.proxy_heads)).flatten()
-            assignment_loss = self.criterion(assignments, view_labels)
+            assignment_loss = self.criterion(assignments, view_labels) * (epoch == self.recovery_epoch)
 
-            # view = self.compute_views(im, num_views=1)[0].detach()
-            # hdist = hausdorff_distance(semrel_graphs, view) * (epoch == self.recovery_epoch)
+            proxy_graphs, proxy_graph_embeds = create_proxy_graphs(self.proxy_heads)
+            minibatch_proxy_graph_labels = [proxy_graph_embeds[i] for i in labels]
+            minibatch_proxy_embed_labels = proxy_graph_embeds[labels]
+            hdist = hausdorff_distance(semrel_graphs, minibatch_proxy_embed_labels) * (epoch == self.recovery_epoch)
 
-            # loss = self.criterion(sem_logits + (recovery_weight * local_logits) + global_logits, labels) + recovery_weight * hdist
-            loss = self.criterion(sem_logits + (recovery_weight * local_logits) + global_logits, labels) + recovery_weight * assignment_loss
+            loss = view_loss + recovery_weight * (assignment_loss + hdist)
 
             loss.backward()
             self.optimizer.step()
