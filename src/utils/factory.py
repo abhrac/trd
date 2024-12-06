@@ -26,8 +26,8 @@ class Factory:
         self.executors = Executors(args)
         self.data = Data(args)
 
-    def get_backbone(self, task):
-        return self.backbones.get(task)
+    def get_backbone(self, task, backbone_type):
+        return self.backbones.get(task, backbone_type)
     
     def get_executor(self, model_type, backbone):
         return self.executors.get(model_type, backbone)
@@ -39,14 +39,14 @@ class Factory:
 class Backbones:
     def __init__(self, args) -> None:
         self.args = args
-        self.backbones = {'fgvc': self._disjoint_encoder}
+        self.backbones = {'fgvc': {'disjoint_encoder': self._disjoint_encoder}}
 
     def _disjoint_encoder(self):
         args = self.args
         return DisjointEncoder(num_classes=args.n_classes, num_local=args.n_local, crop_mode=args.crop_mode)
     
-    def get(self, task):
-        return self.backbones[task]()
+    def get(self, task, backbone_type):
+        return self.backbones[task][backbone_type]()
 
 
 class Executors:

@@ -15,6 +15,7 @@ class Initializers:
         self.device = None
         self.model = None
         self.task = args.task
+        self.backbone_type = args.backbone_type
 
         if args.logdir is None:
             args.logdir = os.path.join(args.checkpoint, args.dataset, 'logdir')
@@ -49,7 +50,7 @@ class Initializers:
     def modeltype(self):
         args, device = self.args, self.device
         # Get the pretrained backbone for extracting views
-        backbone = self.factory.get_backbone(self.task)
+        backbone = self.factory.get_backbone(self.task, self.backbone_type)
         print("[INFO]", str(str(constants.BACKBONE)), "loaded in memory.")
 
         model = self.factory.get_executor(args.model_type, backbone)
