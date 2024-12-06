@@ -46,7 +46,7 @@ class Backbones:
         return DisjointEncoder(num_classes=args.n_classes, num_local=args.n_local, crop_mode=args.crop_mode)
     
     def get(self, task, backbone_type):
-        return self.backbones[task][backbone_type]()
+        return self.backbones[task][backbone_type]() if backbone_type in self.backbones[task] else None
 
 
 class Executors:

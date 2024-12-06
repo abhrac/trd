@@ -51,6 +51,7 @@ class Initializers:
         args, device = self.args, self.device
         # Get the pretrained backbone for extracting views
         backbone = self.factory.get_backbone(self.task, self.backbone_type)
+        assert backbone is not None, "Invalid task-backbone combination."
         print("[INFO]", str(str(constants.BACKBONE)), "loaded in memory.")
 
         model = self.factory.get_executor(args.model_type, backbone)
