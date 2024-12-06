@@ -9,7 +9,7 @@ from tensorboardX import SummaryWriter
 from torch.optim.lr_scheduler import MultiStepLR
 from tqdm import tqdm
 
-from networks.relation_net import DisjointRelationNet
+from networks.relation_net import DisjointRelationNet, Mapper
 from utils import constants
 import timm
 
@@ -26,7 +26,8 @@ class TransformerAgg(nn.Module):
         self.aggregator = timm.create_model('vit_small_patch16_224.augreg_in21k', pretrained=True)
 
         self.relation_net = DisjointRelationNet(feature_dim=self.feature_dim * 2, out_dim=self.feature_dim, num_classes=num_classes)
-        self.agg_net = DisjointRelationNet(feature_dim=384 * 2, out_dim=self.feature_dim, num_classes=num_classes)
+        self.local_classifier = Mapper(feature_dim=384, out_dim=self.feature_dim, num_classes=num_classes)
+        self.agg_net = Mapper(feature_dim=384, out_dim=self.feature_dim, num_classes=self.feature_dim)
 
         if not train_backbone:
             for param in backbone.parameters():
@@ -88,12 +89,11 @@ class TransformerAgg(nn.Module):
         local_embeds = local_embeds.transpose(0, 1)  # Bring batch dimension first
         _, global_embed, _ = self.backbone.extractor(im)
         
-        local_logits =  self.aggregator.forward_features(local_views)[:, 0].reshape((len(im), self.backbone.num_local, -1)).sum(dim=1)
-        local_repr = self.aggregator.forward_features(Fv.resize(global_view, size=(224, 224)))[:, 0]  # class token
-        local_logits = self.agg_net(local_repr, local_repr)
+        local_reprs = self.aggregator.forward_features(local_views)[:, 0].reshape(len(im), self.backbone.num_local, -1).sum(dim=1)
+        local_logits = self.local_classifier(local_reprs)
         
         global_logits = self.relation_net(global_embed, global_embed)
-        sem_logits = self.relation_net(global_embed, global_embed)
+        sem_logits = self.relation_net(global_embed, self.agg_net(local_reprs))
 
         return global_logits, local_logits, sem_logits
 
