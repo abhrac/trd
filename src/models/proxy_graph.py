@@ -54,7 +54,8 @@ def cdist(set1, set2):
     return dist.abs()
 
 
-def hausdorff_distance(g1, g2):
+def instance_wise_hausdorff_distance(g1, g2):
+    num_nodes = g1.shape[1]
     g1_local, g2_local = g1[:, 1:], g2[:, 1:]
     g1_global, g2_global = g1[:, 0], g2[:, 0]
 
@@ -66,10 +67,14 @@ def hausdorff_distance(g1, g2):
     pw_cost_1, _ = dist_matrix.min(1)
     pw_cost_2, _ = dist_matrix.min(2)
 
-    cost_g1, _ = torch.min(torch.cat([d1, pw_cost_2], dim=-1), dim=-1)
-    cost_g2, _ = torch.min(torch.cat([d2, pw_cost_1], dim=-1), dim=-1)
+    cost_g1 = torch.min(torch.cat([d1, pw_cost_2], dim=-1), dim=-1)[0] / (num_nodes * 2)
+    cost_g2 = torch.min(torch.cat([d2, pw_cost_1], dim=-1), dim=-1)[0] / (num_nodes * 2)
 
-    return (cost_g1.sum() + cost_g2.sum()) / (len(g1) * 2)
+    return cost_g1, cost_g2
+
+def hausdorff_distance(g1, g2):
+    cost_g1, cost_g2 = instance_wise_hausdorff_distance(g1, g2)
+    return cost_g1.sum() + cost_g2.sum()
 
 
 class ProxyGraph(nn.Module):
@@ -120,7 +125,11 @@ class ProxyGraph(nn.Module):
             global_logits, local_logits, sem_logits, semrel_graphs = self.compute_reprs(im)
             view_loss = self.criterion(sem_logits + (recovery_weight * local_logits) + global_logits, labels)
 
-            assignments = torch.cat([head(semrel_graphs.flatten(0,1)) for head in self.proxy_heads])
+            assignment_logits = torch.cat(
+                    [head(semrel_graphs.flatten(0,1)).reshape(
+                        im.shape[0], self.num_local, -1).max(dim=1)[0].unsqueeze(dim=0)
+                        for head in self.proxy_heads]).max(dim=0)[0]
+            assignments = torch.cat([head(semrel_graphs.flatten(0,1)) for head in self.proxy_heads]) # Duplication, should ideally be resolved.
             # Useful for fetching specific proxy-view assignment scores and computing a mask matrix.
             # sample_idx = torch.tensor(range(len(im))).unsqueeze(-1).expand(-1, self.num_local).flatten().unsqueeze(-1).to(device)
             # view_idx = torch.tensor([range(self.num_local)]).expand(len(im), -1).flatten().unsqueeze(-1).to(device)
@@ -140,7 +149,7 @@ class ProxyGraph(nn.Module):
             self.optimizer.step()
 
             epoch_state['loss'] += loss.item()
-            epoch_state = self.predict(global_logits, local_logits, sem_logits, labels, epoch_state)
+            epoch_state = self.predict(global_logits, local_logits, sem_logits, assignment_logits, labels, epoch_state)
 
         self.post_epoch('Train', epoch, epoch_state, len(trainloader.dataset), save_path)
 
@@ -150,13 +159,29 @@ class ProxyGraph(nn.Module):
             print('Testing %d epoch' % epoch)
             self.eval()
             device = self.relation_net.layers[0].weight.device  # hacky, but keeps the arg list clean
+            self.proxy_heads = [head.to(device) for head in self.proxy_heads]
             epoch_state = {'loss': 0, 'correct': 0}
             for i, data in enumerate(tqdm(testloader)):
                 im, labels = data
                 im, labels = im.to(device), labels.to(device)
 
-                global_repr, local_repr, relation_logits, _ = self.compute_reprs(im)
-                epoch_state = self.predict(global_repr, local_repr, relation_logits, labels, epoch_state)
+                global_repr, local_repr, relation_logits, semrel_graphs = self.compute_reprs(im)
+                assignment_logits = torch.cat(
+                    [head(semrel_graphs.flatten(0,1)).reshape(
+                        im.shape[0], self.num_local, -1).max(dim=1)[0].unsqueeze(dim=0)
+                        for head in self.proxy_heads]).max(dim=0)[0]
+                assignments = torch.cat([head(semrel_graphs.flatten(0,1)) for head in self.proxy_heads]) # Duplication, should ideally be resolved.
+
+                view_labels = labels.unsqueeze(-1).expand(-1, self.num_local).flatten()
+                view_labels = view_labels.unsqueeze(-1).expand(-1, len(self.proxy_heads)).flatten()
+                assignment_loss = self.criterion(assignments, view_labels) * (epoch == self.recovery_epoch)
+
+                proxy_graphs, proxy_graph_embeds = create_proxy_graphs(self.proxy_heads)
+                minibatch_proxy_graph_labels = [proxy_graph_embeds[i] for i in labels]
+                minibatch_proxy_embed_labels = proxy_graph_embeds[labels]
+                hdist = instance_wise_hausdorff_distance(semrel_graphs, minibatch_proxy_embed_labels)
+
+                epoch_state = self.predict(global_repr, local_repr, relation_logits, assignment_logits, labels, epoch_state)
 
                 loss = self.criterion(relation_logits, labels)
                 epoch_state['loss'] += loss.item()
@@ -194,8 +219,9 @@ class ProxyGraph(nn.Module):
         return views
 
     @torch.no_grad()
-    def predict(self, global_logits, local_logits, relation_logits, labels, epoch_state):
-        pred = (global_logits + (self.local_weight * local_logits) + relation_logits).max(1, keepdim=True)[1]
+    def predict(self, global_logits, local_logits, relation_logits, assignment_logits, labels, epoch_state):
+
+        pred = (global_logits + (self.local_weight * local_logits) + relation_logits + assignment_logits).max(1, keepdim=True)[1]
         epoch_state['correct'] += pred.eq(labels.view_as(pred)).sum().item()
 
         return epoch_state
