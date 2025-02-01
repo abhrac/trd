@@ -18,7 +18,6 @@ conda activate trd
 ```shell
 python3 src/main.py --dataset='DatasetName' --seed=0 --model-type=proxy_graph --train-backbone --crop-mode=random --local-weight=1e-4 --train-bsize=8 --gpu=1 --recovery-epoch=1
 ```
-The `run_expt.sh` file contains sample training commands.
 
 ## Evaluation
 To evaluate on a dataset using pretrained weights, first download the model for the corresponding dataset from
@@ -29,6 +28,10 @@ where `./checkpoint` is under the project root, but could optionally be elsewher
 ```shell
 python3 src/main.py --data_root='RootDirForAllDatasets' --dataset='DatasetName' --pretrained --eval_only
 ```
+The `run_expt.sh` file contains sample training commands.
+
+## Disclaimer
+The pretrained weights provided can be used to reproduce the results in the paper. However, since the training of the models were done using pretrained weights from prior works ([10] and [94] in the main paper), and it consisted of several phases with slightly different hyperparameters for each phase, not all of which were always kept track of, running the training scripts from scratch with the default hyperparameters provided here is unlikely to produce expected results. The purpose of the training scripts provided here is to illustrate how the end-to-end pipelines were implemented. The purpose of the pretrained weights provided here is to reproduce the actual results.
 
 ## Citation
 ```
